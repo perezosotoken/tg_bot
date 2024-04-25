@@ -1,4 +1,4 @@
-const fs = require('fs');
+const fs = require('fs').promises; // Use the promises version of fs
 
 const path = "/home/binyu/Desktop/code/Perezoso/PerezosoTokenBot/server/data/";
 
@@ -21,13 +21,12 @@ function generateMultipleCodes(n, codeLength) {
     return codes;
 }
 
-// Function to save the generated codes to a JSON file with a specific structure
-function saveCodesToJsonFile(codes, communityName) {
+function saveCodesToJsonFile(codes, communityName, influencerAddress) {
     const codesObject = {}; // Create an empty object
-    codesObject[communityName] = {}; // Use bracket notation to use the variable as a key
+    codesObject[`${communityName}:${influencerAddress}`] = {}; // Include influencer address in the key
 
     codes.forEach((code, index) => {
-        codesObject[communityName][index] = code; // Correctly use communityName here
+        codesObject[`${communityName}:${influencerAddress}`][index] = code; // Use the updated key
     });
 
     fs.writeFile(`${path}${communityName}.json`, JSON.stringify(codesObject, null, 4), (err) => {
@@ -39,38 +38,109 @@ function saveCodesToJsonFile(codes, communityName) {
     });
 }
 
-// Function to search for a code in the JSON file
-function searchForCode(code, communityName) {
-    fs.readFile(`${path}${communityName}.json`, 'utf8', (err, data) => {
-        if (err) {
-            console.error("Error reading the file:", err);
-            return;
-        }
-
+async function searchForCode(code, communityName) {
+    try {
+        const data = await fs.readFile(`${path}${communityName}.json`, { encoding: 'utf8' });
         const codesObject = JSON.parse(data);
-        let found = false;
 
-        // Assuming the structure is { "CommunityName": { "0": "code", "1": "code", ... } }
-        for (const community in codesObject) {
-            for (const key in codesObject[community]) {
-                if (codesObject[community][key] === code) {
-                    console.log(`Code found in '${community}' with index ${key}`);
+        console.log('Codes Object:', codesObject); // Log the entire codes object
+
+        let found = false;
+        let foundIndex = -1;
+        let influencerAddress = '';
+
+        // Extracting the first key from the codesObject
+        const firstKey = Object.keys(codesObject)[0];
+
+        console.log('First Key:', firstKey);
+
+        // Splitting communityName into community name and influencer address
+        const [parsedCommunityName, parsedInfluencerAddress] = firstKey.split(':');
+
+        console.log('Parsed Community Name:', parsedCommunityName);
+        console.log('Parsed Influencer Address:', parsedInfluencerAddress);
+
+        // Check if the community exists in the codesObject
+        if (codesObject[firstKey]) {
+            // Loop through the codes in the community
+            for (const key in codesObject[firstKey]) {
+                if (codesObject[firstKey][key] === code) {
+                    console.log(`Code found in '${firstKey}' with index ${key}`);
                     found = true;
-                    break;
+                    foundIndex = parseInt(key); // Convert key to integer
+                    influencerAddress = parsedInfluencerAddress;
+                    break; // Exit loop once code is found
                 }
             }
-            if (found) break;
         }
 
-        if (!found) {
-            console.log("Code not found.");
+        return { found, foundIndex, influencerAddress };
+    } catch (err) {
+        console.error("Error reading the file:", err);
+        return { found: false, foundIndex: -1, influencerAddress: '' };
+    }
+}
+
+
+async function removeCodeFromList(communityName, index, influencerAddress) {
+    try {
+        const data = await fs.readFile(`${path}${communityName}.json`, { encoding: 'utf8' });
+        const codesObject = JSON.parse(data);
+  
+        // Parse community name and influencer address from the key
+        const [parsedCommunityName, parsedInfluencerAddress] = communityName.split(':');
+  
+        // Check if the community exists in the codesObject
+        if (codesObject[communityName]) {
+            // Loop through the codes in the community
+            for (const key in codesObject[communityName]) {
+                if (parseInt(key) === index) {
+                    delete codesObject[communityName][key];
+                    break; // Exit loop once code is removed
+                }
+            }
         }
-    });
+  
+        await fs.writeFile(`${path}${communityName}.json`, JSON.stringify(codesObject, null, 2));
+        console.log(`Code removed from list in ${communityName} at index ${index} for influencer ${influencerAddress}`);
+    } catch (err) {
+        console.error("Error removing code from list:", err);
+    }
+}
+
+  async function populateAuthData() {
+    try {
+        const data = await fs.readFile(`${path}appData.json`, { encoding: 'utf8' });
+        const jsonData = JSON.parse(data);
+        let authData = {};
+        
+        for (const key in jsonData) {
+            if (jsonData.hasOwnProperty(key)) {
+                const username = key;
+                const tokens = jsonData[key];
+                
+                // Set authData for the username
+                authData[username] = {
+                    tokens: tokens,
+                    authenticated: true // You can set other properties as needed
+                };
+            }
+        }
+
+        console.log('Auth data populated successfully:', authData);
+
+        return authData;
+    } catch (error) {
+        console.error('Error populating auth data:', error);
+        return null;
+    }
 }
 
 module.exports = {
     generateCode,
     searchForCode,
     generateMultipleCodes,
-    saveCodesToJsonFile
+    saveCodesToJsonFile,
+    removeCodeFromList,
+    populateAuthData
 };
