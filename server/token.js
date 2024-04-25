@@ -1,6 +1,6 @@
 require('dotenv').config();
 const ethers = require('ethers');
-const { parseUnits, JsonRpcProvider, Contract, Wallet } = ethers;
+const { parseUnits, JsonRpcProvider, Contract, Wallet, isAddress } = ethers;
 
 // Configuration
 const privateKey = process.env.PRIVATE_KEY;
@@ -30,4 +30,7 @@ async function sendToken(recipientAddress, amountToSend) {
 }
 
 
-module.exports = sendToken;
+module.exports = {
+    sendToken,
+    isAddress
+};

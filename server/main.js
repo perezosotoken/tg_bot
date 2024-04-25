@@ -3,19 +3,21 @@ const fs = require('fs');
 
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
-const sendToken = require('./token');
+const {isAddress, sendToken} = require('./token');
 
 const app = express();
 
 const { 
   expressApp, 
-  lastCmd, 
-  userStates, 
-  setLastCmd, 
-  corsOptions 
 } = require('./server');
 
-const { generateMultipleCodes, saveCodesToJsonFile, searchForCode, removeCodeFromList, populateAuthData } = require('../utils.js');
+const { 
+  generateMultipleCodes, 
+  saveCodesToJsonFile, 
+  searchForCode, 
+  removeCodeFromList, 
+  populateAuthData 
+} = require('../utils.js');
 const { parseEther } = require('ethers');
 let userAuthData ;
 
@@ -100,6 +102,11 @@ bot.onText(/\/genCodes (.+) (.+) (.+)/, (msg, match) => {
   const influencerAddress = match[3];
   const user = msg.from.username;
 
+  if (!isAddress(influencerAddress)) {
+    bot.sendMessage(chatId, 'Invalid influencer address.');
+    return;
+  }
+
   // Validation for maximum number of codes
   if (nCodes > 200) {
     bot.sendMessage(chatId, 'You can only generate up to 200 codes at a time.');
@@ -154,6 +161,11 @@ bot.onText(/\/claim (.+) (.+) (.+)/, async (msg, match) => {
   const recipientAddress = match[3];
   const amount = '50000';
 
+  if(!isAddress(recipientAddress)) {
+    bot.sendMessage(chatId, 'Invalid recipient address.');
+    return;
+  }
+  
   console.log(`Attempting to transfer amount ${amount}`);
   try {
       const { found, foundIndex, influencerAddress } = await searchForCode(code, communityName);
