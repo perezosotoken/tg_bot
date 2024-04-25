@@ -1,6 +1,6 @@
 const fs = require('fs').promises; // Use the promises version of fs
 
-const path = "/home/binyu/Desktop/code/Perezoso/PerezosoTokenBot/server/data/";
+const path = "/root/tg_bot/server/data/";
 
 // Function to generate a random alphanumeric code of a given length
 function generateCode(length) {
