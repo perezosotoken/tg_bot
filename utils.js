@@ -21,21 +21,36 @@ function generateMultipleCodes(n, codeLength) {
     return codes;
 }
 
-function saveCodesToJsonFile(codes, communityName, influencerAddress) {
-    const codesObject = {}; // Create an empty object
-    codesObject[`${communityName}:${influencerAddress}`] = {}; // Include influencer address in the key
+async function saveCodesToJsonFile(codes, communityName, influencerAddress) {
+    const filePath = `${path}${communityName}.json`;
 
-    codes.forEach((code, index) => {
-        codesObject[`${communityName}:${influencerAddress}`][index] = code; // Use the updated key
-    });
+    try {
+        // Check if the file already exists
+        await fs.access(filePath);
+        // If the function doesn't throw, the file exists, so we throw our own error
+        throw new Error(`File for ${communityName} already exists and will not be overwritten.`);
+    } catch (err) {
+        // If the file does not exist, err.code should be 'ENOENT'
+        if (err && err.code === 'ENOENT') {
+            // File does not exist, we can safely write
+            const codesObject = {};
+            codesObject[`${communityName}:${influencerAddress}`] = {};
 
-    fs.writeFile(`${path}${communityName}.json`, JSON.stringify(codesObject, null, 4), (err) => {
-        if (err) {
-            console.error('Error writing to file:', err);
+            codes.forEach((code, index) => {
+                codesObject[`${communityName}:${influencerAddress}`][index] = code;
+            });
+
+            try {
+                await fs.writeFile(filePath, JSON.stringify(codesObject, null, 4));
+                console.log('Codes saved to', `${communityName}.json`);
+            } catch (writeErr) {
+                console.error('Error writing to file:', writeErr);
+            }
         } else {
-            console.log('Codes saved to', `${communityName}.json`);
+            // Re-throw the error if it is not related to file existence
+            throw err;
         }
-    });
+    }
 }
 
 async function searchForCode(code, communityName) {

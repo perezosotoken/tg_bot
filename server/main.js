@@ -95,62 +95,54 @@ bot.onText(/\/help(?: (.+))?/, (msg, match) => {
   bot.sendMessage(chatId, helpMessage);
 });
 
-bot.onText(/\/genCodes (.+) (.+) (.+)/, (msg, match) => {
+bot.onText(/\/genCodes (.+) (.+) (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
-  const nCodes = parseInt(match[1]); 
+  const nCodes = parseInt(match[1]);
   const communityName = match[2];
   const influencerAddress = match[3];
   const user = msg.from.username;
 
   if (!isAddress(influencerAddress)) {
-    bot.sendMessage(chatId, 'Invalid influencer address.');
-    return;
+      bot.sendMessage(chatId, 'Invalid influencer address.');
+      return;
   }
 
-  // Validation for maximum number of codes
   if (nCodes > 200) {
-    bot.sendMessage(chatId, 'You can only generate up to 200 codes at a time.');
-    return;
+      bot.sendMessage(chatId, 'You can only generate up to 200 codes at a time.');
+      return;
   }
 
-  // Basic input validation
   if (isNaN(nCodes) || communityName === '' || influencerAddress === '') {
-    bot.sendMessage(chatId, 'Invalid input. Please provide valid data.');
-    return;
+      bot.sendMessage(chatId, 'Invalid input. Please provide valid data.');
+      return;
   }
 
-  // Authentication check
   let authenticated = false;
   try {
-    authenticated = checkAuth(user);
-    if (!authenticated) {
-      bot.sendMessage(chatId, `User ${user} is not authenticated.`);
-      return;
-    } 
+      authenticated = checkAuth(user);
+      if (!authenticated) {
+          bot.sendMessage(chatId, `User ${user} is not authenticated.`);
+          return;
+      }
   } catch (err) {
-    bot.sendMessage(chatId, err.toString());
-    console.error("Error with authentication check", err);
-    return;
+      bot.sendMessage(chatId, err.toString());
+      console.error("Error with authentication check", err);
+      return;
   }
 
-  // Updating the user's last active state
   updateIdleState(user);
 
-  // Generate codes
-  const codes = generateMultipleCodes(nCodes, 24); // Assuming code length is fixed at 24 as per your example
+  const codes = generateMultipleCodes(nCodes, 24);
   console.log(`Generated codes: ${codes}`);
 
-  // Save codes to JSON file
   try {
-    saveCodesToJsonFile(codes, communityName, influencerAddress);
+      await saveCodesToJsonFile(codes, communityName, influencerAddress);
+      const formattedCodes = codes.map((code, index) => `${index + 1}. ${code}`).join('\n');
+      bot.sendMessage(chatId, `Generated Codes:\n${formattedCodes}`);
   } catch (err) {
-    bot.sendMessage(chatId, err.toString());
-    console.error("Error saving codes to JSON file", err);
+      bot.sendMessage(chatId, err.toString());
+      console.error("Error saving codes to JSON file", err);
   }
-
-  // Format and send back the codes in a numbered list
-  const formattedCodes = codes.map((code, index) => `${index + 1}. ${code}`).join('\n');
-  bot.sendMessage(chatId, `Generated Codes:\n${formattedCodes}`);
 });
 
 
