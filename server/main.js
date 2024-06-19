@@ -1,15 +1,12 @@
 require('dotenv').config();
-const fs = require('fs');
 
+const fs = require('fs');
 const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const {isAddress, sendToken} = require('./token');
 
 const app = express();
-
-const { 
-  expressApp, 
-} = require('./server');
+const expressApp = require('express');
 
 const { 
   generateMultipleCodes, 
@@ -19,15 +16,20 @@ const {
   populateAuthData 
 } = require('../utils.js');
 const { parseEther } = require('ethers');
-let userAuthData ;
 
+let userAuthData;
 let depositAddresses, usernames = [];
 
 try {
     (async () => {
+
     userAuthData = await populateAuthData();
 
-    const data = fs.readFileSync('data/appData.json', 'utf8');
+    const data = fs.readFileSync(
+      '/home/binyu/Desktop/code/Perezoso/PerezosoTokenBot/server/data/appData.json', 
+      'utf8'
+    );
+
     depositAddresses = JSON.parse(data);
     // Extract the usernames by splitting the keys
     usernames = Object.keys(depositAddresses).map(key => key.split(':')[0]);
@@ -36,7 +38,6 @@ try {
     console.error("Error reading or parsing the file", err);
     depositAddresses = {}; // fallback to empty object
 }
- 
 
 // Use the Express application from the module
 app.use(expressApp);
@@ -151,7 +152,7 @@ bot.onText(/\/claim (.+) (.+) (.+)/, async (msg, match) => {
   const code = match[1]; 
   const communityName = match[2];
   const recipientAddress = match[3];
-  const amount = '50000';
+  const amount = '100000';
 
   if(!isAddress(recipientAddress)) {
     bot.sendMessage(chatId, 'Invalid recipient address.');
@@ -223,7 +224,12 @@ bot.onText(/\/status/, (msg) => {
 // messages.
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
+  const message = msg.text;
+  const fromId = msg.from.id;
 
+  bot.getChatMember(chatId, fromId).then(function (data) {
+    console.log(data)
+});
   // send a message to the chat acknowledging receipt of their message
   // bot.sendMessage(chatId, 'Received your message');
 });
