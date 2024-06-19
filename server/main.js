@@ -26,7 +26,7 @@ try {
     userAuthData = await populateAuthData();
 
     const data = fs.readFileSync(
-      '/home/binyu/Desktop/code/Perezoso/PerezosoTokenBot/server/data/appData.json', 
+      '/root/tg_bot/server/data/appData.json', 
       'utf8'
     );
 
